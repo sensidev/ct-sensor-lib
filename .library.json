@@ -1,0 +1,17 @@
+{
+    "description": "Multichannel YHDC SCT-013 Current Transformer Sensor library", 
+    "repository": {
+        "url": "https://github.com/sensidev/ct-sensor-lib", 
+        "type": "git"
+    }, 
+    "keywords": [
+        "current", 
+        "transformer", 
+        "YHDC",
+        "multichannel"
+    ], 
+    "platforms": "*",
+    "frameworks": "*",
+    "name": "Multichannel YHDC CT Sensor", 
+    "version": "1.0.0", 
+}
