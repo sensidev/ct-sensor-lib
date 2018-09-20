@@ -59,7 +59,7 @@ void CTSensor::start_sampling()
     double instant;
     double sum_of_squared_instants[_channels_count] = {};
 
-    _log("[SAMPLING] START!");
+    _log("[SAMPLING] START #%d!", _current_rms_data_points_count);
 
     for (uint16_t p = 0; p < _sampling_data_points_count; p++)
     {
@@ -69,7 +69,6 @@ void CTSensor::start_sampling()
             instant = (get_raw_value_for(i) - _ref_voltage_on_zero_current) / _ref_voltage_on_zero_current;
             sum_of_squared_instants[i] += instant * instant;
             delay(DELAY_BETWEEN_I2C_READS_MS);
-            // _log("Instant squared: %f", sum_of_squared_instants[i]);
         }
         if (!_skip_sampling_delay)
         {
@@ -80,7 +79,6 @@ void CTSensor::start_sampling()
     for (uint8_t channel = 0; channel < _channels_count; channel++)
     {
         double rms = _get_current_rms_for_instants(sum_of_squared_instants[channel]);
-        _log("[CHANNEL %d] Add current RMS: %f Amps to data points", channel, rms);
 
         _add_current_rms_params_for(channel, rms);
     }
@@ -92,6 +90,10 @@ void CTSensor::start_sampling()
 
 void CTSensor::_add_current_rms_params_for(uint8_t channel, double current_rms)
 {
+    _log("[CHANNEL %d] Add current RMS: %f Amps to data points", channel, current_rms);
+
+    _rms_current_data_points_per_channel[channel][_current_rms_data_points_count - 1] = current_rms;
+
     _sum_of_current_rms_per_channel[channel] += current_rms;
 
     if (_min_current_rms_per_channel[channel] > current_rms)
@@ -127,6 +129,21 @@ double CTSensor::get_energy_in_watts_hour_for(uint8_t channel)
     return _ref_voltage_input * _sum_of_current_rms_per_channel[channel] * _sampling_period_in_seconds / 3600;
 }
 
+double CTSensor::get_voltage_in_volts_for(uint8_t channel)
+{
+    return (double)_ref_voltage_input;
+}
+
+double CTSensor::get_avg_power_in_watts_for(uint8_t channel)
+{
+    return _ref_voltage_input * get_avg_current_rms_in_amps_for(channel);
+}
+
+double *CTSensor::get_rms_current_data_points_for(uint8_t channel)
+{
+    return _rms_current_data_points_per_channel[channel];
+}
+
 double CTSensor::_get_current_rms_for_instants(double sum_of_squared_instants)
 {
     _log("Sum of squared instants: %f", sum_of_squared_instants);
@@ -144,9 +161,8 @@ double CTSensor::_get_current_rms_for_instants(double sum_of_squared_instants)
     return rms;
 }
 
-void CTSensor::reset()
+void CTSensor::setup()
 {
-    _delete_buffers();
     _new_buffers();
 
     for (uint8_t channel = 0; channel < _channels_count; channel++)
@@ -160,16 +176,35 @@ void CTSensor::reset()
     _current_rms_data_points_count = 1;
 }
 
+void CTSensor::teardown()
+{
+    _delete_buffers();
+}
+
 void CTSensor::_delete_buffers()
 {
-    delete _sum_of_current_rms_per_channel;
-    delete _min_current_rms_per_channel;
-    delete _avg_current_rms_per_channel;
-    delete _max_current_rms_per_channel;
+    for (uint8_t channel = 0; channel < _channels_count; channel++)
+    {
+        if (_rms_current_data_points_per_channel[channel])
+        {
+            delete[] _rms_current_data_points_per_channel[channel];
+        }
+    }
+    delete[] _rms_current_data_points_per_channel;
+
+    delete[] _sum_of_current_rms_per_channel;
+    delete[] _min_current_rms_per_channel;
+    delete[] _avg_current_rms_per_channel;
+    delete[] _max_current_rms_per_channel;
 }
 
 void CTSensor::_new_buffers()
 {
+    _rms_current_data_points_per_channel = new double *[_channels_count];
+    for (uint8_t channel = 0; channel < _channels_count; channel++)
+    {
+        _rms_current_data_points_per_channel[channel] = new double[MAX_NUMER_OF_RMS_CURRENT_DATA_POINTS_PER_CHANNEL];
+    }
     _sum_of_current_rms_per_channel = new double[_channels_count];
     _min_current_rms_per_channel = new double[_channels_count];
     _avg_current_rms_per_channel = new double[_channels_count];

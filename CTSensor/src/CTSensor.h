@@ -9,6 +9,7 @@
 #define DEBUG_MODE 1
 #define CALIBRATION_DATA_POINTS 100
 #define DELAY_BETWEEN_I2C_READS_MS 15
+#define MAX_NUMER_OF_RMS_CURRENT_DATA_POINTS_PER_CHANNEL 100
 
 class CTSensor
 {
@@ -17,12 +18,16 @@ public:
 
   bool init();
   void start_sampling();
-  void reset();
+  void setup();
+  void teardown();
 
   double get_min_current_rms_in_amps_for(uint8_t channel);
   double get_avg_current_rms_in_amps_for(uint8_t channel);
   double get_max_current_rms_in_amps_for(uint8_t channel);
   double get_energy_in_watts_hour_for(uint8_t channel);
+  double get_voltage_in_volts_for(uint8_t channel);
+  double get_avg_power_in_watts_for(uint8_t channel);
+  double *get_rms_current_data_points_for(uint8_t channel);
 
   void calibrate(float *ref_values);
 
@@ -54,6 +59,7 @@ protected:
   
   double _peak_current;
 
+  double **_rms_current_data_points_per_channel = NULL;
   double *_sum_of_current_rms_per_channel = NULL;
   double *_min_current_rms_per_channel = NULL;
   double *_avg_current_rms_per_channel = NULL;
