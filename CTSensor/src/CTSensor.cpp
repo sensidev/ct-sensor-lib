@@ -38,6 +38,8 @@ void CTSensor::start_sampling()
             float _ref_voltage_on_zero_current = _ref_voltage_on_zero_current_per_channel[i];
             instant = (get_raw_value_for(i) - _ref_voltage_on_zero_current) / _ref_voltage_on_zero_current;
             sum_of_squared_instants[i] += instant * instant;
+            delay(20);
+            // _log("Instant squared: %f", sum_of_squared_instants[i]);
         }
         if (!_skip_sampling_delay)
         {
@@ -97,6 +99,10 @@ double CTSensor::get_energy_in_watts_hour_for(uint8_t channel)
 
 double CTSensor::_get_current_rms_for_instants(double sum_of_squared_instants)
 {
+    _log("Sum of squared instants: %f", sum_of_squared_instants);
+    _log("Sampling data points count: %d", _sampling_data_points_count);
+    _log("Peak current: %f", _peak_current);
+
     double rms = _peak_current * sqrt(sum_of_squared_instants / _sampling_data_points_count);
     bool should_filter_noise_out = rms < _current_noise_level;
 

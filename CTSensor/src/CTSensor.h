@@ -56,7 +56,6 @@ protected:
   double *_avg_current_rms_per_channel = NULL;
   double *_max_current_rms_per_channel = NULL;
 
-private:
   void _add_current_rms_params_for(uint8_t channel, double current_rms);
   double _get_current_rms_for_instants(double sum_of_squared_instants);
 
