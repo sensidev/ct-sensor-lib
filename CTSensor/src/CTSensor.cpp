@@ -14,9 +14,39 @@ bool CTSensor::init()
     return true;
 }
 
-void CTSensor::set_ref_voltage_on_zero_current_for(uint8_t channel, float ref_value)
+void CTSensor::calibrate(float *ref_values)
 {
-    _ref_voltage_on_zero_current_per_channel[channel] = ref_value;
+    for (uint8_t c = 0; c < _channels_count; c++)
+    {
+        _ref_voltage_on_zero_current_per_channel[c] = ref_values[c];
+    }
+}
+
+void CTSensor::print_calibration_info()
+{
+    float sum_of_raw_values_per_channel[_channels_count] = {0, 0, 0, 0};
+    uint8_t points = CALIBRATION_DATA_POINTS;
+
+    while (points)
+    {
+        for (uint8_t c = 0; c < _channels_count; c++)
+        {
+            sum_of_raw_values_per_channel[c] += get_raw_value_for(c);
+            delay(DELAY_BETWEEN_I2C_READS_MS);
+        }
+        points--;
+    }
+
+    _log("Current calibration set: {%f, %f, %f, %f};",
+         _ref_voltage_on_zero_current_per_channel[0],
+         _ref_voltage_on_zero_current_per_channel[1],
+         _ref_voltage_on_zero_current_per_channel[2],
+         _ref_voltage_on_zero_current_per_channel[3]);
+    _log("Desired calibration set: {%f, %f, %f, %f};",
+         sum_of_raw_values_per_channel[0] / CALIBRATION_DATA_POINTS,
+         sum_of_raw_values_per_channel[1] / CALIBRATION_DATA_POINTS,
+         sum_of_raw_values_per_channel[2] / CALIBRATION_DATA_POINTS,
+         sum_of_raw_values_per_channel[3] / CALIBRATION_DATA_POINTS);
 }
 
 CTSensor::~CTSensor()
@@ -38,7 +68,7 @@ void CTSensor::start_sampling()
             float _ref_voltage_on_zero_current = _ref_voltage_on_zero_current_per_channel[i];
             instant = (get_raw_value_for(i) - _ref_voltage_on_zero_current) / _ref_voltage_on_zero_current;
             sum_of_squared_instants[i] += instant * instant;
-            delay(20);
+            delay(DELAY_BETWEEN_I2C_READS_MS);
             // _log("Instant squared: %f", sum_of_squared_instants[i]);
         }
         if (!_skip_sampling_delay)

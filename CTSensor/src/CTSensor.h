@@ -7,6 +7,8 @@
 #include <math.h>
 
 #define DEBUG_MODE 1
+#define CALIBRATION_DATA_POINTS 100
+#define DELAY_BETWEEN_I2C_READS_MS 15
 
 class CTSensor
 {
@@ -22,9 +24,10 @@ public:
   double get_max_current_rms_in_amps_for(uint8_t channel);
   double get_energy_in_watts_hour_for(uint8_t channel);
 
-  void set_ref_voltage_on_zero_current_for(uint8_t channel, float ref_value);
+  void calibrate(float *ref_values);
 
   void print_debug_info();
+  void print_calibration_info();
   void print_channels_info();
 
   virtual void print_log(const char *msg) = 0;
